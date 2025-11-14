@@ -1,6 +1,7 @@
 package com.inventory.msp.controller;
 
 import com.inventory.msp.dto.DeviceDto;
+import com.inventory.msp.dto.DeviceRequest;
 import com.inventory.msp.model.Device;
 import com.inventory.msp.services.DeviceService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,20 @@ import java.util.stream.Collectors;
 public class DeviceController {
 
     private final DeviceService deviceService;
+
+    // Admin-only endpoint
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/create")
+    public ResponseEntity<?> createDevice(@RequestBody DeviceRequest request) {
+        try {
+            String response = deviceService.createDevice(request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Failed to create device: " + e.getMessage());
+        }
+    }
 
     //  Get all devices
     @GetMapping

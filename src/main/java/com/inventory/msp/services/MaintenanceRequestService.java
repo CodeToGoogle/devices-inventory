@@ -52,7 +52,7 @@ public class MaintenanceRequestService {
             Location loc = locationRepo.findById(newLocationId)
                     .orElseThrow(() -> new RuntimeException("Location missing unexpectedly"));
 
-            ApproachRoad road = roadRepo.findByRoadNameAndLocation(req.getNewApproachRoadName(), loc)
+            ApproachRoad road = roadRepo.findByRoadNameAndLocationIgnoreCase(req.getNewApproachRoadName(), loc)
                     .orElseThrow(() -> new RuntimeException(
                             "Approach road not found: " + req.getNewApproachRoadName()
                     ));
@@ -60,10 +60,10 @@ public class MaintenanceRequestService {
             newApproachRoadId = road.getId();
         }
 
-        // ✅ 4. Generate reference ID
+        //  4. Generate reference ID
         String refId = "REQ-" + UUID.randomUUID().toString().substring(0, 8);
 
-        // ✅ 5. CREATE REQUEST
+        //  5. CREATE REQUEST
         MaintenanceRequest r = new MaintenanceRequest();
         r.setReferenceId(refId);
 

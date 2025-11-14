@@ -35,11 +35,9 @@ public class ExcelUploadService {
             Row row = sheet.getRow(r);
             if (row == null || isRowEmpty(row)) continue;
 
-            // ✅ Extract device serials in this row
             List<DeviceEntry> devices = extractDeviceCells(row, headerRow);
             if (devices.isEmpty()) continue;
 
-            // ✅ Use merged-cell safe readers
             String locationName = getMergedCellValue(sheet, r, 1);
             String approachName = getMergedCellValue(sheet, r, 2);
 
@@ -48,14 +46,10 @@ public class ExcelUploadService {
             if (approachName == null || approachName.trim().isEmpty())
                 approachName = locationName + "-ROAD-" + r;
 
-            // ✅ Poles and ECB
             boolean poles = parsePoles(row.getCell(3));
             boolean ecbPresent = convertToBoolean(row.getCell(10));
-
-            // ✅ Junction Box = SMALL when present
             JunctionBoxType junctionBox = parseJunctionBox(row.getCell(11));
 
-            // ✅ lat / lon
             String lat = getString(row.getCell(13));
             String lon = getString(row.getCell(14));
 
@@ -68,12 +62,20 @@ public class ExcelUploadService {
                                     .build()
                     ));
 
-            // ✅ Always create an approach road (not unique)
-            ApproachRoad road = approachRoadRepository.save(
-                    new ApproachRoad(null, approachName, location)
-            );
+            // **************************************
+            // ✅ FIXED: Prevent duplicate approach roads
+            // **************************************
+            String finalApproachName = approachName;
+            ApproachRoad road = approachRoadRepository
+                    .findByRoadNameIgnoreCaseAndLocationId(approachName.trim(), location.getId())
+                    .orElseGet(() -> {
+                        ApproachRoad newRoad = new ApproachRoad();
+                        newRoad.setRoadName(finalApproachName.trim());
+                        newRoad.setLocation(location);
+                        return approachRoadRepository.save(newRoad);
+                    });
 
-            // ✅ Create Device entries
+            // Create Device entries
             for (DeviceEntry entry : devices) {
 
                 String rawVal = entry.value;
@@ -106,7 +108,6 @@ public class ExcelUploadService {
 
                 Device saved = deviceRepository.save(device);
 
-                // ✅ Save history
                 DeviceHistory history = DeviceHistory.builder()
                         .deviceId(saved.getId())
                         .action("Installed")
@@ -126,7 +127,6 @@ public class ExcelUploadService {
         workbook.close();
     }
 
-    // ✅ Device Columns: ANPR / RLVD / PTZ / FIXED / ANALYTICAL
     private List<DeviceEntry> extractDeviceCells(Row row, Row headerRow) {
 
         List<DeviceEntry> list = new ArrayList<>();
@@ -166,18 +166,15 @@ public class ExcelUploadService {
         return list;
     }
 
-    // ✅ Valid serial = 16 alphanumeric characters
     private boolean isValidSerial(String s) {
         return s != null && s.trim().matches("^[A-Za-z0-9]{16}$");
     }
 
-    // ✅ Poles = true when Excel has value 1
     private boolean parsePoles(Cell cell) {
         String val = getString(cell);
         return "1".equals(val);
     }
 
-    // ✅ ECB: TRUE for 1 / YES / TRUE
     private boolean convertToBoolean(Cell cell) {
         String s = getString(cell);
         if (s == null) return false;
@@ -185,7 +182,6 @@ public class ExcelUploadService {
         return s.equals("1") || s.equals("YES") || s.equals("TRUE");
     }
 
-    // ✅ Junction Box = SMALL when present
     private JunctionBoxType parseJunctionBox(Cell cell) {
         String s = getString(cell);
         if (s == null) return JunctionBoxType.NONE;
@@ -193,7 +189,6 @@ public class ExcelUploadService {
         return s.equals("1") || s.contains("SMALL") ? JunctionBoxType.SMALL : JunctionBoxType.NONE;
     }
 
-    // ✅ Safe String converter
     private String getString(Cell cell) {
         if (cell == null) return null;
 
@@ -213,12 +208,10 @@ public class ExcelUploadService {
         }
     }
 
-    // ✅ Safe uppercase handler
     private String safeUpper(String s) {
         return s == null ? "" : s.toUpperCase();
     }
 
-    // ✅ Merged cell support
     private String getMergedCellValue(Sheet sheet, int row, int col) {
         for (int i = 0; i < sheet.getNumMergedRegions(); i++) {
             CellRangeAddress range = sheet.getMergedRegion(i);
@@ -230,7 +223,6 @@ public class ExcelUploadService {
         return getString(sheet.getRow(row).getCell(col));
     }
 
-    // ✅ Empty row detection
     private boolean isRowEmpty(Row row) {
         for (int c = 0; c < row.getLastCellNum(); c++) {
             if (getString(row.getCell(c)) != null) return false;
@@ -238,7 +230,6 @@ public class ExcelUploadService {
         return true;
     }
 
-    // ✅ Helper class
     private static class DeviceEntry {
         int col;
         String type;

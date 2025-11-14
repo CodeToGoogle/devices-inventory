@@ -54,12 +54,12 @@
             <artifactId>poi</artifactId>
             <version>5.2.5</version>
         </dependency>
-        <!-- ✅ Validation -->
+        <!--  Validation -->
         <dependency>
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>
         </dependency>
-        <!-- ✅ JSON -->
+        <!--  JSON -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -74,7 +74,7 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-        <!-- ✅ Spring Security -->
+        <!--  Spring Security -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>

@@ -1,6 +1,7 @@
 package com.inventory.msp.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -11,6 +12,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.multipart.support.MultipartFilter;
+
+import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
@@ -33,34 +39,47 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Optional: if you have CORS config
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/excel/upload").permitAll() // change to hasRole("ADMIN") if needed
+                        .requestMatchers("/api/excel/upload").permitAll()
                         .requestMatchers("/api/maintenance/**").hasRole("ADMIN")
                         .requestMatchers("/api/devices/**").hasAnyRole("ADMIN", "VIEWER")
                         .requestMatchers("/api/agency/**").hasRole("AGENCY")
                         .anyRequest().authenticated()
                 )
+                // ✅ keep it simple: JWT filter runs before UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // Optional: Only needed if you use .cors().and() without config source
-    // Remove if you don't have CORS setup elsewhere
+    /**
+     * Allow CORS globally (you can lock this down later)
+     */
     @Bean
-    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource() {
         return request -> {
-            org.springframework.web.cors.CorsConfiguration config = new org.springframework.web.cors.CorsConfiguration();
-            config.setAllowedOriginPatterns(java.util.List.of("*"));
-            config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-            config.setAllowedHeaders(java.util.List.of("*"));
+            CorsConfiguration config = new CorsConfiguration();
+            config.setAllowedOriginPatterns(List.of("*"));
+            config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+            config.setAllowedHeaders(List.of("*"));
             config.setAllowCredentials(true);
             return config;
         };
+    }
+
+    /**
+     * ✅ Register MultipartFilter early — separate from Spring Security chain
+     */
+    @Bean
+    public FilterRegistrationBean<MultipartFilter> multipartFilterRegistrationBean() {
+        FilterRegistrationBean<MultipartFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(new MultipartFilter());
+        registration.addUrlPatterns("/*");
+        registration.setName("multipartFilter");
+        registration.setOrder(-200); // executes before Spring Security
+        return registration;
     }
 }

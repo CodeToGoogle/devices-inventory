@@ -23,7 +23,7 @@ public class MaintenanceController {
 
     //  AGENCY CREATES REQUEST
     @PostMapping("/requests")
-    public ResponseEntity<MaintenanceRequestDto> create(
+    public ResponseEntity<MaintenanceResponseDto> create(
             @RequestBody CreateMaintenanceRequestRequest req,
             Authentication auth) {
 
@@ -37,7 +37,7 @@ public class MaintenanceController {
         }
 
         MaintenanceRequest created = maintenanceService.createRequest(req);
-        return ResponseEntity.ok(toDto(created));
+        return ResponseEntity.ok(toResponseDto(created));
     }
 
 
@@ -77,11 +77,11 @@ public class MaintenanceController {
     private MaintenanceRequestDto toDto(MaintenanceRequest r) {
         MaintenanceRequestDto d = new MaintenanceRequestDto();
         d.setId(r.getId());
-        d.setDeviceId(r.getDeviceId());
-        d.setOldSerial(r.getOldSerial());
-        d.setNewSerial(r.getNewSerial());
-        d.setRequestType(r.getRequestType());
-        d.setStatus(r.getStatus());
+        d.setDeviceId(r.getDeviceId()); //device id
+        d.setOldSerial(r.getOldSerial());   //old serial of the device
+        d.setNewSerial(r.getNewSerial());   //new serial of the device
+        d.setRequestType(r.getRequestType());       //request type faulty, replace etc
+        d.setStatus(r.getStatus());                 //current status of the request
         d.setNewLocationId(r.getNewLocationId());
         d.setNewApproachRoadId(r.getNewApproachRoadId());
         d.setCreatedBy(r.getCreatedBy());
@@ -91,4 +91,51 @@ public class MaintenanceController {
 
         return d;
     }
+
+    //Response DTO-----------------------------------------------------------------------------------
+
+    private MaintenanceResponseDto toResponseDto(MaintenanceRequest r) {
+
+        MaintenanceResponseDto d = new MaintenanceResponseDto();
+
+        // Basic request details
+        d.setId(r.getId());
+        d.setDeviceId(r.getDeviceId());
+        d.setOldSerial(r.getOldSerial());
+        d.setNewSerial(r.getNewSerial());
+
+        d.setRequestType(r.getRequestType());
+        d.setStatus(r.getStatus());
+        d.setCreatedBy(r.getCreatedBy());
+        d.setApprovedBy(r.getApprovedBy());
+        d.setReferenceId(r.getReferenceId());
+        d.setRemarks(r.getRemarks());
+        d.setCreatedAt(r.getCreatedAt());
+        d.setUpdatedAt(r.getUpdatedAt());
+
+        // ---------------------------
+        // EXTRA: Device + Location + Road
+        // ---------------------------
+        if (r.getDeviceId() != null) {
+
+            Device device = deviceService.getDevice(r.getDeviceId());
+
+            d.setDeviceType(device.getDeviceType());
+
+            d.setCurrentSerial(device.getSerialNumber());
+
+            if (device.getLocation() != null) {
+
+                d.setLocationName(device.getLocation().getName());
+            }
+
+            if (device.getApproachRoad() != null) {
+
+                d.setApproachRoadName(device.getApproachRoad().getRoadName());
+            }
+        }
+
+        return d;
+    }
+
 }

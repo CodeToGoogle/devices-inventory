@@ -10,14 +10,14 @@ import java.util.Optional;
 
 public interface ApproachRoadRepository extends JpaRepository<ApproachRoad, Long> {
 
-    // ✅ Fix: Always fetch location when loading all roads
+    // Fetch all approach roads with location for listing
     @Query("""
         SELECT ar FROM ApproachRoad ar
         JOIN FETCH ar.location
     """)
     List<ApproachRoad> findAllWithLocation();
 
-    // ✅ Fetch by location name
+    // Fetch roads by location name (for UI dropdown etc.)
     @Query("""
         SELECT ar FROM ApproachRoad ar
         JOIN FETCH ar.location loc
@@ -25,5 +25,13 @@ public interface ApproachRoadRepository extends JpaRepository<ApproachRoad, Long
     """)
     List<ApproachRoad> findByLocationName(String locationName);
 
-    Optional<ApproachRoad> findByRoadNameAndLocation(String roadName, Location loc);
+    // Correct lookup: roadName + location must match (case-insensitive)
+    @Query("""
+        SELECT ar FROM ApproachRoad ar
+        WHERE LOWER(TRIM(ar.roadName)) = LOWER(TRIM(:roadName))
+        AND ar.location = :location
+    """)
+    Optional<ApproachRoad> findByRoadNameAndLocationIgnoreCase(String roadName, Location location);
+
+    Optional<ApproachRoad> findByRoadNameIgnoreCaseAndLocationId(String roadName, Long locationId);
 }

@@ -1,9 +1,11 @@
 package com.inventory.msp.services;
 
-import com.inventory.msp.model.Device;
-import com.inventory.msp.model.DeviceHistory;
+import com.inventory.msp.dto.DeviceRequest;
+import com.inventory.msp.model.*;
+import com.inventory.msp.repository.ApproachRoadRepository;
 import com.inventory.msp.repository.DeviceHistoryRepository;
 import com.inventory.msp.repository.DeviceRepository;
+import com.inventory.msp.repository.LocationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,65 @@ public class DeviceService {
 
     private final DeviceRepository deviceRepository;
     private final DeviceHistoryRepository historyRepository;
+    private final LocationRepository locationRepository;
+    private final ApproachRoadRepository approachRoadRepository;
+
+    public String createDevice(DeviceRequest request) {
+
+        // Normalize input once (avoid trim() everywhere)
+        String serial = request.getSerialNumber().trim();
+        String locationName = request.getLocationName().trim();
+        String roadName = request.getApproachRoadName().trim();
+
+        // 1. Check duplicate serial number
+        if (deviceRepository.findBySerialNumber(serial).isPresent()) {
+            throw new IllegalArgumentException(
+                    "Device already exists with this serial number: " + serial
+            );
+        }
+
+        // 2. Find or create Location
+        Location location = locationRepository.findByNameIgnoreCase(locationName)
+                .orElseGet(() -> {
+                    Location newLoc = new Location();
+                    newLoc.setName(locationName);
+                    newLoc.setJunctionBox(JunctionBoxType.NONE);
+                    return locationRepository.save(newLoc);
+                });
+
+        // 3. Find or create ApproachRoad (roadName + location must be unique)
+        ApproachRoad approachRoad = approachRoadRepository
+                .findByRoadNameAndLocationIgnoreCase(roadName, location)
+                .orElseGet(() -> {
+                    ApproachRoad newRoad = new ApproachRoad();
+                    newRoad.setRoadName(roadName);
+                    newRoad.setLocation(location);
+                    return approachRoadRepository.save(newRoad);
+                });
+
+        // 4. Create device
+        Device device = Device.builder()
+                .serialNumber(serial)
+                .deviceType(request.getDeviceType())
+                .junctionBoxType(request.getJunctionBoxType())
+                .poles(request.getPoles())
+                .ecbPresent(request.getEcbPresent())
+                .placeholder(request.isPlaceholder())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
+                .status(request.getStatus())
+                .location(location)
+                .approachRoad(approachRoad)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        deviceRepository.save(device);
+
+        return "✅ Device created successfully at location: " + location.getName();
+    }
+
+
 
     public List<Device> getAllDevices() {
         return deviceRepository.findAll();
@@ -36,8 +97,8 @@ public class DeviceService {
     }
 
     /**
-     ✅ Updates a placeholder device with a real serial
-     ✅ Creates history log using builder
+      Updates a placeholder device with a real serial
+      Creates history log using builder
      */
     public Device updateSerialNumber(Long deviceId, String newSerial) {
 

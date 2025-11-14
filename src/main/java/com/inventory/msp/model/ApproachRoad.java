@@ -8,7 +8,10 @@ import lombok.*;
 @Entity
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor @Builder
-@Table(name="approach_road")
+@Table(name="approach_road" ,
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"road_name", "location_id"})
+        })
 public class ApproachRoad {
 
     @Id
