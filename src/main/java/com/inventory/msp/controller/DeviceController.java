@@ -21,6 +21,7 @@ public class DeviceController {
     private final DeviceService deviceService;
 
     // Admin-only endpoint
+
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/create")
     public ResponseEntity<?> createDevice(@RequestBody DeviceRequest request) {

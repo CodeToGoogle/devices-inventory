@@ -1,6 +1,7 @@
 package com.inventory.msp.services;
 
 import com.inventory.msp.dto.DeviceRequest;
+import com.inventory.msp.exception.AlreadyExistsException;
 import com.inventory.msp.model.*;
 import com.inventory.msp.repository.ApproachRoadRepository;
 import com.inventory.msp.repository.DeviceHistoryRepository;
@@ -30,7 +31,7 @@ public class DeviceService {
 
         // 1. Check duplicate serial number
         if (deviceRepository.findBySerialNumber(serial).isPresent()) {
-            throw new IllegalArgumentException(
+            throw new AlreadyExistsException(
                     "Device already exists with this serial number: " + serial
             );
         }

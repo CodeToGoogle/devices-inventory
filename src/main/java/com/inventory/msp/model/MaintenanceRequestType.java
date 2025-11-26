@@ -5,5 +5,7 @@ public enum MaintenanceRequestType {
     REPAIR,
     REPLACE,
     SERIAL_UPDATE,
-    MOVE
+    MOVE,
+    SPARE,
+    TESTING
 }

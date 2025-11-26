@@ -7,6 +7,7 @@ import com.inventory.msp.services.DeviceService;
 import com.inventory.msp.services.MaintenanceRequestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +24,7 @@ public class MaintenanceController {
 
     //  AGENCY CREATES REQUEST
     @PostMapping("/requests")
+    @PreAuthorize("hasAnyRole('ADMIN','AGENCY')")
     public ResponseEntity<MaintenanceResponseDto> create(
             @RequestBody CreateMaintenanceRequestRequest req,
             Authentication auth) {
@@ -36,6 +38,7 @@ public class MaintenanceController {
             req.setOldSerial(device.getSerialNumber());  //  overwrite unsafe oldSerial from request
         }
 
+
         MaintenanceRequest created = maintenanceService.createRequest(req);
         return ResponseEntity.ok(toResponseDto(created));
     }
@@ -43,12 +46,16 @@ public class MaintenanceController {
 
     //  GET SINGLE REQUEST
     @GetMapping("/requests/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','AGENCY')")
+
     public ResponseEntity<MaintenanceRequestDto> get(@PathVariable Long id) {
         return ResponseEntity.ok(toDto(maintenanceService.getById(id)));
     }
 
     //  LIST ALL
     @GetMapping("/requests")
+    @PreAuthorize("hasAnyRole('ADMIN','AGENCY')")
+
     public ResponseEntity<List<MaintenanceRequestDto>> list() {
         List<MaintenanceRequestDto> list = maintenanceService.getAll()
                 .stream()
@@ -60,6 +67,8 @@ public class MaintenanceController {
 
     //  ADMIN APPROVAL
     @PostMapping("/requests/{id}/approve")
+    @PreAuthorize("hasAnyRole('ADMIN')")
+
     public ResponseEntity<MaintenanceRequestDto> approve(@PathVariable Long id,
                                                          @RequestBody ApproveRequestDto dto,
                                                          Authentication auth) {

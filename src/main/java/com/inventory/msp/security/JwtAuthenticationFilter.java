@@ -28,12 +28,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        System.out.println("JWT Filter executed for: " + request.getRequestURI());
 
         final String header = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (header == null || !header.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
+
+
 
         final String token = header.substring(7);
 
@@ -58,9 +61,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        return path.startsWith("/api/auth/") || path.equals("/api/excel/upload");
+        String uri = request.getRequestURI();
+        return uri.startsWith("/api/auth/");
     }
+
 
 
 

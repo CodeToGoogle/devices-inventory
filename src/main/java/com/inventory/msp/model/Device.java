@@ -32,7 +32,8 @@ public class Device {
     private String latitude;
     private String longitude;
 
-    private String status;            // Installed, Faulty, Repaired, etc.
+
+    private String status;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

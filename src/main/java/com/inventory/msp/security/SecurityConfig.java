@@ -44,12 +44,17 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/excel/upload").permitAll()
-                        .requestMatchers("/api/maintenance/**").hasRole("ADMIN")
-                        .requestMatchers("/api/devices/**").hasAnyRole("ADMIN", "VIEWER")
+                        .requestMatchers("/api/devices/create").permitAll()
+                        .requestMatchers("/api/weighbridge/**").permitAll()
+                        .requestMatchers("/api/weighbridge/report").permitAll()
+                        .requestMatchers("/api/maintenance/**").hasAnyRole("ADMIN","AGENCY")
+                        .requestMatchers("/api/devices/**").hasAnyRole("ADMIN", "VIEWER","AGENCY")
+
                         .requestMatchers("/api/agency/**").hasRole("AGENCY")
+
                         .anyRequest().authenticated()
                 )
-                // ✅ keep it simple: JWT filter runs before UsernamePasswordAuthenticationFilter
+                //  keep it simple: JWT filter runs before UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -70,16 +75,6 @@ public class SecurityConfig {
         };
     }
 
-    /**
-     * ✅ Register MultipartFilter early — separate from Spring Security chain
-     */
-    @Bean
-    public FilterRegistrationBean<MultipartFilter> multipartFilterRegistrationBean() {
-        FilterRegistrationBean<MultipartFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(new MultipartFilter());
-        registration.addUrlPatterns("/*");
-        registration.setName("multipartFilter");
-        registration.setOrder(-200); // executes before Spring Security
-        return registration;
-    }
+
+
 }
